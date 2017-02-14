@@ -1,0 +1,22 @@
+html, body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+.main {
+  display: block;
+  min-height: 500px;
+  min-width: 500px;
+  text-align: center;
+}
+
+canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+#tsp-canvas {
+  border: 2px solid #D3D3D3;
+}
