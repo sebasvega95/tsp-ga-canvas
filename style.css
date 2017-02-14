@@ -19,6 +19,7 @@ canvas {
 
 #tsp-canvas {
   border: 2px solid rgb(17, 97, 10);
+  background: #cdcdcd;
 }
 
 .hud {
