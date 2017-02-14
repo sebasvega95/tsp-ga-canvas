@@ -26,6 +26,8 @@ canvas {
   padding: 10px 5px 0 5px;
   display: inline-block;
   color: rgb(210, 106, 55);
+  font-weight: bold;
+  font-size: 1.5em;
 }
 
 #solution {
