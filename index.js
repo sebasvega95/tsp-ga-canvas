@@ -1,13 +1,71 @@
 import GeneticAlgorithm from 'genetic-algorithm-fw';
 import Victor from 'victor';
-import { clone, floor, shuffle, range, random } from 'lodash';
+import {
+  clone,
+  constant,
+  floor,
+  includes,
+  random,
+  range,
+  shuffle,
+  times
+} from 'lodash';
 
 let canvas, ctx;
-let population, cities;
+let population, cities, ga;
 const K = 500 * 500;
-const populationSize = 20;
-const numberOfCities = 3;
-const cityColor = 'red', cityOutline = 'blue', cityRadius = 5;
+const populationSize = 20, numberOfCities = 10;
+const cityColor = 'red', cityOutline = 'blue', cityRadius = 10;
+const pathOutline = 'blue', genPathOutline = '#81C784';
+let maxFitness, bestPhenotype;
+let solutionText;
+
+function mutation(oldPhenotype) {
+  let pos1 = random(numberOfCities - 1);
+  let pos2 = random(numberOfCities - 1);
+
+  let newP = clone(oldPhenotype);
+  [newP[pos1], newP[pos2]] = [newP[pos2], newP[pos1]];
+  return newP;
+}
+
+function crossover(phenoTypeA, phenoTypeB) {
+  let child = times(numberOfCities, constant(null));
+  let pos1 = random(numberOfCities - 1);
+  let pos2 = random(numberOfCities - 1);
+  if (pos1 > pos2) [pos1, pos2] = [pos2, pos1];
+
+  for (let i = 0; i < numberOfCities; i++) {
+    if (i >= pos1 && i <= pos2) {
+      child[i] = phenoTypeA[i];
+    }
+  }
+  for (let i = 0; i < numberOfCities; i++) {
+    if (!includes(child, phenoTypeB[i])) {
+      for (let j = 0; j < numberOfCities; j++) {
+        if (child[j] == null) {
+          child[j] = phenoTypeB[i];
+          break;
+        }
+      }
+    }
+  }
+
+  return [child];
+}
+
+function fitness(phenotype) {
+  let sum = 0;
+  for (let i = 0; i < numberOfCities; i++) {
+    let act = phenotype[i], next = phenotype[(i + 1) % numberOfCities];
+    sum += cities[act].distance(cities[next]);
+  }
+  return K - sum;
+}
+
+function competition(phenoTypeA, phenoTypeB) {
+  return fitness(phenoTypeA) > fitness(phenoTypeB);
+}
 
 function resize(canvas) {
   let width = canvas.clientWidth;
@@ -17,34 +75,6 @@ function resize(canvas) {
     canvas.height = height;
   }
 }
-
-const mutation = oldPhenotype => {
-  let pos1 = random(numberOfCities);
-  let pos2 = random(numberOfCities);
-  while (pos1 == pos2)
-    pos2 = random(numberOfCities);
-
-  let newPhenotype = clone(oldPhenotype);
-  [newPhenotype[pos1], newPhenotype[pos2]] = [
-    newPhenotype[pos2],
-    newPhenotype[pos1]
-  ];
-
-  return newPhenotype;
-};
-const crossover = (phenoTypeA, phenoTypeB) => {};
-const fitness = phenotype => {
-  let sum = 0;
-  for (let i = 0; i < numberOfCities; i++) {
-    let act = phenotype[i], next = phenotype[(i + 1) % numberOfCities];
-    console.log(i, act, next);
-    sum += cities[act].distance(cities[next]);
-  }
-  return K - sum;
-};
-const competition = (phenoTypeA, phenoTypeB) => {
-  return fitness(phenoTypeA) > fitness(phenoTypeB);
-};
 
 function startAnimation() {
   canvas = document.getElementById('tsp-canvas');
@@ -63,17 +93,54 @@ function startAnimation() {
     cities.push(new Victor(x, y));
   }
 
-  console.log(cities);
-  console.log('before', population[0], fitness(population[0]));
-  let a = mutation(population[0]);
-  console.log('new', a, fitness(a));
-  console.log('after', population[0], fitness(population[0]));
+  ga = new GeneticAlgorithm(
+    mutation,
+    crossover,
+    fitness,
+    competition,
+    population,
+    populationSize
+  );
 
+  maxFitness = -1;
   animate();
 }
 
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ga.evolve();
+
+  let curPhenotype = ga.best();
+  let curFitness = fitness(curPhenotype);
+  if (curFitness > maxFitness) {
+    maxFitness = curFitness;
+    bestPhenotype = curPhenotype;
+    solutionText.innerHTML = maxFitness.toFixed(2);
+  }
+
+  // Best in generation
+  for (let i = 0; i < numberOfCities; i++) {
+    let act = curPhenotype[i], next = curPhenotype[(i + 1) % numberOfCities];
+    let c1 = cities[act], c2 = cities[next];
+    ctx.beginPath();
+    ctx.moveTo(c1.x, c1.y);
+    ctx.lineTo(c2.x, c2.y);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = genPathOutline;
+    ctx.stroke();
+  }
+
+  // Best ever
+  for (let i = 0; i < numberOfCities; i++) {
+    let act = bestPhenotype[i], next = bestPhenotype[(i + 1) % numberOfCities];
+    let c1 = cities[act], c2 = cities[next];
+    ctx.beginPath();
+    ctx.moveTo(c1.x, c1.y);
+    ctx.lineTo(c2.x, c2.y);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = pathOutline;
+    ctx.stroke();
+  }
 
   cities.forEach(c => {
     ctx.beginPath();
@@ -88,4 +155,5 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-startAnimation();
+solutionText = document.getElementById('solution');
+document.getElementById('start').onclick = () => startAnimation();

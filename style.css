@@ -18,5 +18,21 @@ canvas {
 }
 
 #tsp-canvas {
-  border: 2px solid #D3D3D3;
+  border: 2px solid rgb(17, 97, 10);
+}
+
+.hud {
+  padding: 10px 5px 0 5px;
+  display: inline-block;
+  color: rgb(210, 106, 55);
+}
+
+#solution {
+  margin: 0 20px;
+}
+
+#start {
+  margin: 0 20px;
+  background-color: rgb(210, 106, 55);
+  color: white;
 }
